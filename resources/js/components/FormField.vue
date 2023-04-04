@@ -7,56 +7,53 @@
       <FormLabel
         :label-for="labelFor || field.uniqueKey"
         :class="{ 'mb-2': shouldShowHelpText }"
-        v-if="fieldLabel"
       >
-        {{ fieldLabel }}
-        <span v-if="field.required" class="text-red-500 text-sm">
-          {{ __('*') }}
-        </span>
+        {{ field.label }}
       </FormLabel>
     </div>
-
     <div
       class="mt-1 md:mt-0 pb-5 px-6 md:px-8"
       :class="{
-        'w-full md:w-1/5 md:py-5': !field.stacked,
-        'w-full md:w-3/5 md:pt-2': field.stacked,
+        'md:w-full': fullWidthContent,
+        'md:w-4/5': !fullWidthContent,
+        'w-full md:py-5': !field.stacked,
+        'w-full md:pt-2': field.stacked,
       }"
     >
-      <span v-if="field.confirm == null">
-        <nova-button
-          :field="field"
-          :resourceName="resourceName"
-          :resourceId="resourceId"
-          :disabled="field.disabled"
-          @finished="reload"
-        />
-      </span>
+      <div class="nova-button-align">
+        <span v-if="field.confirm == null">
+          <nova-button
+            :field="field"
+            :resourceName="resourceName"
+            :resourceId="resourceId"
+            :disabled="field.disabled"
+            @finished="reload"
+          />
+        </span>
+        <div v-else>
+          <button
+            :class="field.classes"
+            :disabled="field.disabled"
+            v-html="field.text"
+            @click.prevent.stop="modalIsOpen = true"
+            type="button"
+          />
 
-      <div v-else>
-        <button
-          :class="field.classes"
-          :disabled="field.disabled"
-          v-html="field.text"
-          @click.prevent.stop="modalIsOpen = true"
-          type="button"
-        />
-
-        <confirm-modal
-          v-if="modalIsOpen"
-          :field="field"
-          :resource="resource"
-          :resource-name="resourceName"
-          @finished="modalReload"
-          @closed="modalIsOpen = false"
-        />
+          <confirm-modal
+            v-if="modalIsOpen"
+            :field="field"
+            :resource="resource"
+            :resource-name="resourceName"
+            @finished="modalReload"
+            @closed="modalIsOpen = false"
+          />
+        </div>
       </div>
-
-      <HelpText class="mt-2 help-text-error" v-if="showErrors && hasError">
-        {{ firstError }}
-      </HelpText>
-
-      <HelpText class="help-text mt-2" v-if="shouldShowHelpText" v-html="field.helpText" />
+      <HelpText
+        class="help-text mt-2"
+        v-if="shouldShowHelpText"
+        v-html="field.helpText"
+      />
     </div>
   </FieldWrapper>
 </template>
@@ -65,35 +62,30 @@
 import field from '../../field';
 import NovaButton from './NovaButton';
 import ConfirmModal from './ConfirmModal';
-import FieldWrapper from 'laravel-nova/components/FieldWrapper';
-import FormLabel from 'laravel-nova/components/FormLabel';
-import HelpText from 'laravel-nova/components/HelpText';
-import DependentFormField from 'laravel-nova/mixins/DependentFormField';
+import { DependentFormField, mapProps } from '@/mixins'
+import FieldWrapper from "@/components/FieldWrapper.vue";
+import HelpText from "@/components/HelpText.vue";
+import FormLabel from "@/components/FormLabel.vue";
+
 
 export default {
-  components: { NovaButton, ConfirmModal, FieldWrapper, FormLabel, HelpText },
-  props: ['resource', 'resourceName', 'resourceId', 'field'],
+  components: { NovaButton, ConfirmModal },
+  props: {
+    field: { type: Object, required: true },
+    resourceName: { type: String },
+    resource: { default: undefined },
+    resourceId: { default: undefined },
+    labelFor: { default: null },
+    index: { default: null },
+    ...mapProps(['showHelpText']),
+  },
   mixins: [field, DependentFormField],
   computed: {
-    /**
-     * Return the label that should be used for the field.
-     */
-    fieldLabel() {
-      // If the field label is purposefully an empty string, then let's show it as such
-      if (this.field.label === '') {
-        return '';
-      }
-
-      return this.field.label || this.field.name;
-    },
-
     /**
      * Determine help text should be shown.
      */
     shouldShowHelpText() {
-      return (
-        this.showHelpText && this.field && this.field.helpText && this.field.helpText.length > 0
-      );
+      return this.showHelpText && this.field.helpText?.length > 0
     },
   },
 };
